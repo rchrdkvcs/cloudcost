@@ -6,9 +6,5 @@ console.log(data?.hello);
 </script>
 
 <template>
-  <UApp>
-    
-
-    <NuxtPage />
-  </UApp>
+  <NuxtPage> </NuxtPage>
 </template>
