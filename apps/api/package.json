@@ -16,6 +16,7 @@
   "imports": {
     "#core/*": "./app/core/*.js",
     "#health/*": "./app/health/*.js",
+    "#prices/*": "./app/prices/*.js",
     "#auth/*": "./app/auth/*.js",
     "#database/*": "./database/*.js",
     "#start/*": "./start/*.js",
