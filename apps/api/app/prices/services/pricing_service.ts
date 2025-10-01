@@ -373,15 +373,8 @@ export default class PricingService {
       const { regions, operatingSystem = 'Linux' } = options
       const region = regions?.[0] || 'eastus'
 
-      // Construire le filtre pour l'OS
-      let osFilter = ''
-      if (operatingSystem === 'Linux') {
-        osFilter = " and not contains(skuName, 'Windows')"
-      } else if (operatingSystem === 'Windows') {
-        osFilter = " and contains(skuName, 'Windows')"
-      }
-
-      const priceUrl = `https://prices.azure.com/api/retail/prices?$filter=serviceName eq 'Virtual Machines' and priceType eq 'Consumption' and armRegionName eq '${region}'${osFilter}`
+      // API de base - filtrage OS fait en post-traitement
+      const priceUrl = `https://prices.azure.com/api/retail/prices?$filter=serviceName eq 'Virtual Machines' and priceType eq 'Consumption' and armRegionName eq '${region}'`
       const priceRes = await fetch(priceUrl)
 
       if (!priceRes.ok) {
@@ -392,12 +385,17 @@ export default class PricingService {
       const data = (await priceRes.json()) as any
 
       return (data.Items || [])
-        .filter(
-          (item: any) =>
-            item.productName?.includes('Virtual Machines') &&
-            item.skuName &&
-            !item.skuName.includes('Low Priority')
-        )
+        .filter((item: any) => {
+          if (!item.productName?.includes('Virtual Machines')) return false
+          if (!item.skuName) return false
+          if (item.skuName.includes('Low Priority')) return false
+
+          // Filtrer par OS
+          if (operatingSystem === 'Linux' && item.skuName.includes('Windows')) return false
+          if (operatingSystem === 'Windows' && !item.skuName.includes('Windows')) return false
+
+          return true
+        })
         .slice(0, 50)
         .map((item: any) => {
           const match = item.armSkuName?.match(/Standard_([A-Z])(\d+)/)
