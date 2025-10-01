@@ -8,6 +8,7 @@ export type CloudProvider =
   | 'OVH'
   | 'Linode'
 export type CloudPlanType = 'VM' | 'Serverless' | 'Static' | 'Container'
+export type OperatingSystem = 'Linux' | 'Windows' | 'All'
 
 export interface CloudPlan {
   provider: CloudProvider
@@ -22,45 +23,126 @@ export interface CloudPlan {
   type: CloudPlanType
 }
 
-export default class PricingService {
-  public async fetchAll(): Promise<CloudPlan[]> {
-    const [aws, digitalocean, hetzner, scaleway, azure] = await Promise.all([
-      this.fetchAWS(),
-      this.fetchDigitalOcean(),
-      this.fetchHetzner(),
-      this.fetchScaleway(),
-      this.fetchAzure(),
-    ])
+export interface FetchOptions {
+  providers?: CloudProvider[]
+  regions?: string[]
+  operatingSystem?: OperatingSystem
+  instanceTypes?: string[]
+  minCpu?: number
+  maxCpu?: number
+  minRam?: number
+  maxRam?: number
+  includeGpu?: boolean
+}
 
-    return [...aws, ...digitalocean, ...hetzner, ...scaleway, ...azure]
+export default class PricingService {
+  public async fetchAll(options: FetchOptions = {}): Promise<CloudPlan[]> {
+    const {
+      providers = ['AWS', 'DigitalOcean', 'Hetzner', 'Scaleway', 'Azure'],
+      regions,
+      operatingSystem = 'Linux',
+      instanceTypes,
+      minCpu,
+      maxCpu,
+      minRam,
+      maxRam,
+      includeGpu = false,
+    } = options
+
+    const promises: Promise<CloudPlan[]>[] = []
+
+    if (providers.includes('AWS')) {
+      promises.push(
+        this.fetchAWS({
+          regions,
+          operatingSystem,
+          instanceTypes,
+        })
+      )
+    }
+
+    if (providers.includes('DigitalOcean')) {
+      promises.push(
+        this.fetchDigitalOcean({
+          includeGpu,
+        })
+      )
+    }
+
+    if (providers.includes('Hetzner')) {
+      promises.push(this.fetchHetzner())
+    }
+
+    if (providers.includes('Scaleway')) {
+      promises.push(
+        this.fetchScaleway({
+          regions,
+          includeGpu,
+        })
+      )
+    }
+
+    if (providers.includes('Azure')) {
+      promises.push(
+        this.fetchAzure({
+          regions,
+          operatingSystem,
+        })
+      )
+    }
+
+    const results = await Promise.all(promises)
+    let plans = results.flat()
+
+    // Filtrer par CPU et RAM
+    if (minCpu !== undefined) {
+      plans = plans.filter((plan) => plan.cpu >= minCpu)
+    }
+    if (maxCpu !== undefined) {
+      plans = plans.filter((plan) => plan.cpu <= maxCpu)
+    }
+    if (minRam !== undefined) {
+      plans = plans.filter((plan) => plan.ram_gb >= minRam)
+    }
+    if (maxRam !== undefined) {
+      plans = plans.filter((plan) => plan.ram_gb <= maxRam)
+    }
+
+    return plans
   }
 
   /** ================= AWS ================= */
-  private async fetchAWS(): Promise<CloudPlan[]> {
+  private async fetchAWS(
+    options: {
+      regions?: string[]
+      operatingSystem?: OperatingSystem
+      instanceTypes?: string[]
+    } = {}
+  ): Promise<CloudPlan[]> {
     try {
-      // Limiter à une région pour simplifier (us-east-1)
-      const regionUrl =
-        'https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonEC2/current/us-east-1/index.json'
+      const { regions, operatingSystem = 'Linux', instanceTypes } = options
+
+      // Utiliser us-east-1 par défaut si aucune région spécifiée
+      const region = regions?.[0] || 'us-east-1'
+      const regionUrl = `https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonEC2/current/${region}/index.json`
+
       const res = await fetch(regionUrl)
       const data = (await res.json()) as any
 
       const results: CloudPlan[] = []
 
-      // Filtrer uniquement les instances les plus courantes
-      const allowedInstances = [
-        // T3 (burstable, économique)
+      // Instances par défaut si aucune spécifiée
+      const allowedInstances = instanceTypes || [
         't3.micro',
         't3.small',
         't3.medium',
         't3.large',
         't3.xlarge',
         't3.2xlarge',
-        // M5 (usage général)
         'm5.large',
         'm5.xlarge',
         'm5.2xlarge',
         'm5.4xlarge',
-        // C5 (compute optimized)
         'c5.large',
         'c5.xlarge',
         'c5.2xlarge',
@@ -72,14 +154,18 @@ export default class PricingService {
           const attrs = product.attributes
           const instanceType = attrs.instanceType
 
-          // Filtrer par liste exacte d'instances
-          if (
-            !instanceType ||
-            !allowedInstances.includes(instanceType) ||
-            attrs.operatingSystem !== 'Linux' ||
-            attrs.tenancy !== 'Shared' ||
-            attrs.preInstalledSw !== 'NA'
-          ) {
+          // Filtrer par instance type
+          if (!instanceType || !allowedInstances.includes(instanceType)) {
+            continue
+          }
+
+          // Filtrer par OS
+          const osMatches =
+            operatingSystem === 'All' ||
+            (operatingSystem === 'Linux' && attrs.operatingSystem === 'Linux') ||
+            (operatingSystem === 'Windows' && attrs.operatingSystem === 'Windows')
+
+          if (!osMatches || attrs.tenancy !== 'Shared' || attrs.preInstalledSw !== 'NA') {
             continue
           }
 
@@ -125,8 +211,9 @@ export default class PricingService {
   }
 
   /** ================= DigitalOcean ================= */
-  private async fetchDigitalOcean(): Promise<CloudPlan[]> {
+  private async fetchDigitalOcean(options: { includeGpu?: boolean } = {}): Promise<CloudPlan[]> {
     try {
+      const { includeGpu = false } = options
       const token = process.env.DIGITALOCEAN_API_TOKEN
 
       if (!token) {
@@ -149,7 +236,11 @@ export default class PricingService {
       const data = (await res.json()) as any
 
       return (data.sizes || [])
-        .filter((size: any) => size.available && !size.slug.includes('gpu'))
+        .filter((size: any) => {
+          if (!size.available) return false
+          if (!includeGpu && size.slug.includes('gpu')) return false
+          return true
+        })
         .map((size: any) => ({
           provider: 'DigitalOcean',
           name: size.slug,
@@ -217,9 +308,16 @@ export default class PricingService {
   }
 
   /** ================= Scaleway ================= */
-  private async fetchScaleway(): Promise<CloudPlan[]> {
+  private async fetchScaleway(
+    options: {
+      regions?: string[]
+      includeGpu?: boolean
+    } = {}
+  ): Promise<CloudPlan[]> {
     try {
-      const url = 'https://api.scaleway.com/instance/v1/zones/fr-par-1/products/servers'
+      const { regions, includeGpu = false } = options
+      const zone = regions?.[0] || 'fr-par-1'
+      const url = `https://api.scaleway.com/instance/v1/zones/${zone}/products/servers`
       const res = await fetch(url)
 
       if (!res.ok) {
@@ -232,7 +330,7 @@ export default class PricingService {
       const results: CloudPlan[] = []
 
       for (const [name, server] of Object.entries<any>(data.servers || {})) {
-        if (server.arch?.includes('arm')) continue
+        if (!includeGpu && server.arch?.includes('arm')) continue
 
         const cpu = Number(server.ncpus) || 0
         const ramGb = server.ram ? Number(server.ram) / (1024 * 1024 * 1024) : 0
@@ -246,7 +344,7 @@ export default class PricingService {
           results.push({
             provider: 'Scaleway',
             name,
-            region: 'fr-par-1',
+            region: zone,
             cpu,
             ram_gb: ramGb,
             storage_gb: storageGb,
@@ -265,11 +363,25 @@ export default class PricingService {
   }
 
   /** ================= Azure ================= */
-  private async fetchAzure(): Promise<CloudPlan[]> {
+  private async fetchAzure(
+    options: {
+      regions?: string[]
+      operatingSystem?: OperatingSystem
+    } = {}
+  ): Promise<CloudPlan[]> {
     try {
-      // API Retail Prices (publique, pas besoin d'authentification)
-      const priceUrl =
-        "https://prices.azure.com/api/retail/prices?$filter=serviceName eq 'Virtual Machines' and priceType eq 'Consumption' and armRegionName eq 'eastus'"
+      const { regions, operatingSystem = 'Linux' } = options
+      const region = regions?.[0] || 'eastus'
+
+      // Construire le filtre pour l'OS
+      let osFilter = ''
+      if (operatingSystem === 'Linux') {
+        osFilter = " and not contains(skuName, 'Windows')"
+      } else if (operatingSystem === 'Windows') {
+        osFilter = " and contains(skuName, 'Windows')"
+      }
+
+      const priceUrl = `https://prices.azure.com/api/retail/prices?$filter=serviceName eq 'Virtual Machines' and priceType eq 'Consumption' and armRegionName eq '${region}'${osFilter}`
       const priceRes = await fetch(priceUrl)
 
       if (!priceRes.ok) {
@@ -284,7 +396,6 @@ export default class PricingService {
           (item: any) =>
             item.productName?.includes('Virtual Machines') &&
             item.skuName &&
-            !item.skuName.includes('Windows') &&
             !item.skuName.includes('Low Priority')
         )
         .slice(0, 50)
@@ -296,7 +407,7 @@ export default class PricingService {
           return {
             provider: 'Azure',
             name: item.armSkuName || item.skuName,
-            region: item.armRegionName || 'eastus',
+            region: item.armRegionName || region,
             cpu,
             ram_gb: ramGb,
             price_hourly: item.retailPrice || 0,

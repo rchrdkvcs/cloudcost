@@ -7,6 +7,10 @@ export default class GetPricingController {
   constructor(protected pricingService: PricingService) {}
 
   async execute({}: HttpContext) {
-    return await this.pricingService.fetchAll()
+    return await this.pricingService.fetchAll({
+      minRam: 8,
+      maxRam: 8,
+      operatingSystem: 'Linux',
+    })
   }
 }
