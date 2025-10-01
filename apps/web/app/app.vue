@@ -7,8 +7,8 @@ console.log(data?.hello);
 
 <template>
   <UApp>
-    <h1 class="text-3xl font-bold underline">Hello world!</h1>
+    
 
-    <UButton label="Click me" />
+    <NuxtPage />
   </UApp>
 </template>
