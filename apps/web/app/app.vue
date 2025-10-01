@@ -1,10 +1,12 @@
 <script setup lang="ts">
-const tuyau = useTuyau();
-const { data } = await tuyau.$route("health").$get();
+// const tuyau = useTuyau();
+// const { data } = await tuyau.$route("health").$get();
 
-console.log(data?.hello);
+// console.log(data?.hello);
 </script>
 
 <template>
-  <NuxtPage> </NuxtPage>
+  <NuxtLayout>
+    <NuxtPage></NuxtPage>
+  </NuxtLayout>
 </template>
