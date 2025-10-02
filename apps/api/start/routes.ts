@@ -8,9 +8,7 @@
 */
 
 import router from '@adonisjs/core/services/router'
-2
-const GetPricingController = () => import('#prices/controllers/get_pricing_controller')
-const GetHealthController = () => import('#health/controllers/get_health_controller')
 
-router.get('/health', [GetHealthController, 'execute']).as('health')
+const GetPricingController = () => import('#prices/controllers/get_pricing_controller')
+
 router.get('/pricing', [GetPricingController, 'execute']).as('pricing')
