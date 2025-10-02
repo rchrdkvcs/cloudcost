@@ -11,12 +11,22 @@ type HealthGetHead = {
   request: unknown
   response: MakeTuyauResponse<import('../app/health/controllers/get_health_controller.ts').default['execute'], false>
 }
+type PricingGetHead = {
+  request: MakeTuyauRequest<InferInput<typeof import('../app/prices/controllers/get_pricing_controller.ts').default['validators']>>
+  response: MakeTuyauResponse<import('../app/prices/controllers/get_pricing_controller.ts').default['execute'], true>
+}
 export interface ApiDefinition {
   'health': {
     '$url': {
     };
     '$get': HealthGetHead;
     '$head': HealthGetHead;
+  };
+  'pricing': {
+    '$url': {
+    };
+    '$get': PricingGetHead;
+    '$head': PricingGetHead;
   };
 }
 const routes = [
@@ -26,6 +36,13 @@ const routes = [
     path: '/health',
     method: ["GET","HEAD"],
     types: {} as HealthGetHead,
+  },
+  {
+    params: [],
+    name: 'pricing',
+    path: '/pricing',
+    method: ["GET","HEAD"],
+    types: {} as PricingGetHead,
   },
 ] as const;
 export const api = {
