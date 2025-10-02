@@ -1,49 +1,78 @@
 <script setup lang="ts">
-const data = ref([
+import type { TableColumn } from "@nuxt/ui";
+import { h, resolveComponent } from "vue";
+import { Column } from "@tanstack/vue-table";
+
+const UButton = resolveComponent("UButton");
+
+const tuyau = useTuyau();
+const { data } = await tuyau.$route("pricing").$get({
+  query: {
+    cpu: 4,
+    ramGb: 16,
+  },
+});
+
+const columns: TableColumn<any>[] = [
   {
-    Serveur: "4600",
-    CPU: "2024-03-11T15:30:00",
-    RAM: "paid",
-    Bandwith: "james.anderson@example.com",
-    Region: 594,
-    OS: Linux,
-    Type: VM,
-    Stockage: 1tb,
-    Prix Mensuel: 100€,
-    Prix horaire: 0.01€,
-    Type d instance: Partagé,
+    accessorKey: "provider",
+    header: ({ column }) => getHeader(column, "Provider"),
+    enableGrouping: true,
   },
   {
-    Serveur: "4600",
-    CPU: "2024-03-11T15:30:00",
-    RAM: "paid",
-    Bandwith: "james.anderson@example.com",
-    Region: 594,
+    accessorKey: "name",
+    header: ({ column }) => getHeader(column, "Serveur"),
   },
   {
-    Serveur: "4600",
-    CPU: "2024-03-11T15:30:00",
-    RAM: "paid",
-    Bandwith: "james.anderson@example.com",
-    Region: 594,
+    accessorKey: "region",
+    header: ({ column }) => getHeader(column, "Région"),
   },
   {
-    Serveur: "4600",
-    CPU: "2024-03-11T15:30:00",
-    RAM: "paid",
-    Bandwith: "james.anderson@example.com",
-    Region: 594,
+    accessorKey: "storageGb",
+    header: ({ column }) => getHeader(column, "Stockage"),
   },
   {
-    Serveur: "4600",
-    CPU: "2024-03-11T15:30:00",
-    RAM: "paid",
-    Bandwith: "james.anderson@example.com",
-    Region: 594,
+    accessorKey: "cpu",
+    header: ({ column }) => getHeader(column, "CPU"),
   },
-]);
+  {
+    accessorKey: "ramGb",
+    header: ({ column }) => getHeader(column, "RAM"),
+  },
+  {
+    accessorKey: "priceHourly",
+    header: ({ column }) => getHeader(column, "Prix / heure"),
+  },
+  {
+    accessorKey: "priceMonthly",
+    header: ({ column }) => getHeader(column, "Prix / mois"),
+  },
+];
+function getHeader(column: Column<any>, label: string) {
+  return h(UButton, {
+    color: "neutral",
+    variant: "ghost",
+    label: `${label}`,
+    icon:
+      column.getIsSorted() === "asc"
+        ? "lucide:arrow-up-narrow-wide"
+        : column.getIsSorted() === "desc"
+          ? "lucide:arrow-down-wide-narrow"
+          : "lucide:arrow-down-up",
+    onClick: () => column.toggleSorting(),
+  });
+}
 </script>
 
 <template>
-  <UTable :data="data" class="flex-1" />
+  <UContainer class="py-4">
+    <h1 class="text-xl font-semibold">Détails de la comparaison</h1>
+
+    <UTable
+      ref="table"
+      :data="data?.plans ?? []"
+      :columns="columns"
+      class="mt-4 rounded-lg border border-default bg-muted"
+    />
+  </UContainer>
 </template>
