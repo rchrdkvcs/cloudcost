@@ -3,9 +3,10 @@ import { createTuyau } from "@tuyau/client";
 import { api } from "@aduxt/api/api";
 
 export default defineNuxtPlugin(() => {
+  const config = useRuntimeConfig();
   const tuyauClient = createTuyau({
     api,
-    baseUrl: "http://localhost:3333",
+    baseUrl: config.public.apiBase,
   });
 
   return {

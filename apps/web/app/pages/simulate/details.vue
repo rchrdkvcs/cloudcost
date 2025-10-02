@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ref } from 'vue'
+
 const data = ref([
   {
     Serveur: "4600",
@@ -6,12 +8,12 @@ const data = ref([
     RAM: "paid",
     Bandwith: "james.anderson@example.com",
     Region: 594,
-    OS: Linux,
-    Type: VM,
-    Stockage: 1tb,
-    Prix Mensuel: 100€,
-    Prix horaire: 0.01€,
-    Type d instance: Partagé,
+    OS: "Linux",
+    Type: "VM",
+    Stockage: "1tb",
+    "Prix Mensuel": "100€",
+    "Prix horaire": "0.01€",
+    "Type d instance": "Partagé",
   },
   {
     Serveur: "4600",

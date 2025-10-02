@@ -15,25 +15,25 @@ export default class CloudPlan extends BaseModel {
   @column()
   declare region: string
 
-  @column()
+  @column({ columnName: 'operating_system', serializeAs: 'operating_system' })
   declare operatingSystem: string
 
   @column()
   declare cpu: number
 
-  @column()
+  @column({ columnName: 'ram_gb', serializeAs: 'ram_gb' })
   declare ramGb: number
 
-  @column()
+  @column({ columnName: 'storage_gb', serializeAs: 'storage_gb' })
   declare storageGb: number | null
 
-  @column()
+  @column({ columnName: 'bandwidth_tb', serializeAs: 'bandwidth_tb' })
   declare bandwidthTb: number | null
 
-  @column()
+  @column({ columnName: 'price_hourly', serializeAs: 'price_hourly' })
   declare priceHourly: number
 
-  @column()
+  @column({ columnName: 'price_monthly', serializeAs: 'price_monthly' })
   declare priceMonthly: number
 
   @column()

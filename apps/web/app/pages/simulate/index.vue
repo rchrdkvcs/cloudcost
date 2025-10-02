@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
+const router = useRouter();
 
 type ProviderType = "VM" | "Container" | "Serverless";
 
@@ -67,7 +68,8 @@ function onSubmit(e: Event) {
   e.preventDefault();
   submitted.value = true;
   if (!validate()) return;
-  console.log("Soumission formulaire:", form.value);
+  const data = encodeURIComponent(JSON.stringify(form.value));
+  router.push({ path: '/compare', query: { data } });
 }
 </script>
 
