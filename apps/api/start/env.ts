@@ -43,4 +43,11 @@ export default await Env.create(new URL('../', import.meta.url), {
   */
   DIGITALOCEAN_API_TOKEN: Env.schema.string(),
   HETZNER_API_TOKEN: Env.schema.string(),
+
+  /*
+  |----------------------------------------------------------
+  | LLM Endpoint
+  |----------------------------------------------------------
+  */
+  LLM_ENDPOINT: Env.schema.string(),
 })
