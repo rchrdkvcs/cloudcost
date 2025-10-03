@@ -18,6 +18,7 @@
     "#health/*": "./app/health/*.js",
     "#prices/*": "./app/prices/*.js",
     "#auth/*": "./app/auth/*.js",
+    "#models/*": "./app/user/models/*.js",
     "#database/*": "./database/*.js",
     "#start/*": "./start/*.js",
     "#tests/*": "./tests/*.js",

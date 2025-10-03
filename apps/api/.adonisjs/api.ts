@@ -15,6 +15,22 @@ type PricingGetHead = {
   request: MakeTuyauRequest<InferInput<typeof import('../app/prices/controllers/get_pricing_controller.ts').default['validators']>>
   response: MakeTuyauResponse<import('../app/prices/controllers/get_pricing_controller.ts').default['execute'], true>
 }
+type AuthLoginPost = {
+  request: MakeTuyauRequest<InferInput<typeof import('../app/auth/controllers/login_controller.ts').default['validator']>>
+  response: MakeTuyauResponse<import('../app/auth/controllers/login_controller.ts').default['execute'], true>
+}
+type AuthRegisterPost = {
+  request: MakeTuyauRequest<InferInput<typeof import('../app/auth/controllers/register_controller.ts').default['validator']>>
+  response: MakeTuyauResponse<import('../app/auth/controllers/register_controller.ts').default['execute'], true>
+}
+type AuthLogoutPost = {
+  request: unknown
+  response: MakeTuyauResponse<import('../app/auth/controllers/logout_controller.ts').default['execute'], false>
+}
+type AuthMeGetHead = {
+  request: unknown
+  response: MakeTuyauResponse<import('../app/auth/controllers/me_controller.ts').default['execute'], false>
+}
 export interface ApiDefinition {
   'health': {
     '$url': {
@@ -27,6 +43,29 @@ export interface ApiDefinition {
     };
     '$get': PricingGetHead;
     '$head': PricingGetHead;
+  };
+  'auth': {
+    'login': {
+      '$url': {
+      };
+      '$post': AuthLoginPost;
+    };
+    'register': {
+      '$url': {
+      };
+      '$post': AuthRegisterPost;
+    };
+    'logout': {
+      '$url': {
+      };
+      '$post': AuthLogoutPost;
+    };
+    'me': {
+      '$url': {
+      };
+      '$get': AuthMeGetHead;
+      '$head': AuthMeGetHead;
+    };
   };
 }
 const routes = [
@@ -43,6 +82,34 @@ const routes = [
     path: '/pricing',
     method: ["GET","HEAD"],
     types: {} as PricingGetHead,
+  },
+  {
+    params: [],
+    name: 'auth.login',
+    path: '/auth/login',
+    method: ["POST"],
+    types: {} as AuthLoginPost,
+  },
+  {
+    params: [],
+    name: 'auth.register',
+    path: '/auth/register',
+    method: ["POST"],
+    types: {} as AuthRegisterPost,
+  },
+  {
+    params: [],
+    name: 'auth.logout',
+    path: '/auth/logout',
+    method: ["POST"],
+    types: {} as AuthLogoutPost,
+  },
+  {
+    params: [],
+    name: 'auth.me',
+    path: '/auth/me',
+    method: ["GET","HEAD"],
+    types: {} as AuthMeGetHead,
   },
 ] as const;
 export const api = {

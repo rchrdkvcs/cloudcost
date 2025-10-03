@@ -2,22 +2,23 @@ import type { HttpContext } from '@adonisjs/core/http'
 import User from '#models/user'
 import vine from '@vinejs/vine'
 
-export default class LoginController {
+export default class RegisterController {
   static validator = vine.compile(
     vine.object({
+      fullName: vine.string().trim().minLength(2).optional(),
       email: vine.string().trim().email().normalizeEmail(),
-      password: vine.string().minLength(8),
+      password: vine.string().minLength(8).maxLength(64),
     })
   )
 
   async execute({ request, response }: HttpContext) {
-    const { email, password } = await request.validateUsing(LoginController.validator)
+    const data = await request.validateUsing(RegisterController.validator)
 
-    const user = await User.verifyCredentials(email, password)
+    const user = await User.create(data)
     const token = await User.accessTokens.create(user)
 
-    return response.ok({
-      message: 'Logged in successfully',
+    return response.created({
+      message: 'User registered successfully',
       token: token.value!.release(),
       user,
     })
