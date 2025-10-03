@@ -44,6 +44,7 @@ const { data, refresh, status } = await useAsyncData(
     }),
   {
     immediate: true,
+    server: false,
   },
 );
 

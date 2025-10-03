@@ -24,7 +24,7 @@ export default class GetPricingController {
   async execute({ request }: HttpContext) {
     const data = await request.validateUsing(GetPricingController.validators)
 
-    const plans = await this.pricingService.getPlans({
+    const allPlans = await this.pricingService.getPlans({
       providers: data.provider,
       regions: data.region,
       minCpu: data.cpu,
@@ -33,8 +33,16 @@ export default class GetPricingController {
       maxRam: data.ramGb,
     })
 
-    const llmRecomendation = await this.llmService.getBestPlans(plans, data.customPrompt)
+    const llmRecomendation = await this.llmService.getBestPlans(allPlans, data.customPrompt)
 
-    return { llmRecomendation, plans }
+    // Exclure les recommandations de la liste complète pour éviter les doublons
+    const recommendationIds = new Set(llmRecomendation.map((plan) => plan.id))
+    const plans = allPlans.filter((plan) => !recommendationIds.has(plan.id))
+
+    // Convertir les modèles Lucid en objets JSON simples
+    return {
+      llmRecomendation: llmRecomendation.map((plan) => plan.serialize()),
+      plans: plans.map((plan) => plan.serialize()),
+    }
   }
 }
