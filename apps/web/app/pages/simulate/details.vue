@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { TableColumn } from "@nuxt/ui";
 import { h, resolveComponent } from "vue";
-import { Column } from "@tanstack/vue-table";
+import type { Column } from "@tanstack/vue-table";
 
 const UButton = resolveComponent("UButton");
 
@@ -62,12 +62,25 @@ function getHeader(column: Column<any>, label: string) {
     onClick: () => column.toggleSorting(),
   });
 }
+function printPage() {
+  window.print();
+}
 </script>
 
 <template>
-  <UContainer class="py-4">
+  <UContainer class="py-4 flex justify-between">
     <h1 class="text-xl font-semibold">Détails de la comparaison</h1>
+    <UButton
+      icon="i-lucide-download"
+      size="md"
+      color="primary"
+      variant="solid"
+      @click="printPage"
+      >Exporter en PDF</UButton
+    >
+  </UContainer>
 
+  <UContainer class="py-4">
     <UTable
       ref="table"
       :data="data?.plans ?? []"
